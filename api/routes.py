@@ -1,11 +1,17 @@
 from flask import Flask, jsonify, request
 from models import User, Role, Device, DeviceData, MedicalRecord, Appointment, Alert, Message
+from twilio.rest import Client
 from database import session
 import datetime
+import os
 
 app = Flask(__name__)
 
-# User Management
+# Environment variables for Twilio
+twilio_account_sid = os.getenv('TWILIO_ACCOUNT_SID')
+twilio_auth_token = os.getenv('TWILIO_AUTH_TOKEN')
+
+# User Management Routes
 @app.route('/users/register', methods=['POST'])
 def register_user():
     data = request.json
@@ -30,7 +36,7 @@ def assign_role(user_id):
     session.commit()
     return jsonify({"message": "Roles assigned successfully"}), 200
 
-# Device Integration
+# Device Integration Routes
 @app.route('/devices/register', methods=['POST'])
 def register_device():
     data = request.json
@@ -61,7 +67,7 @@ def admin_toggle_device(device_id):
     session.commit()
     return jsonify({"message": "Device integration toggled successfully", "status": device.is_enabled}), 200
 
-# Patient Care Management
+# Patient Care Management Routes
 @app.route('/patients/<int:patient_id>/medical_record', methods=['POST'])
 def update_medical_record(patient_id):
     data = request.json
@@ -87,28 +93,7 @@ def schedule_appointment():
     session.commit()
     return jsonify({"message": "Appointment scheduled successfully"}), 201
 
-@app.route('/alerts/setup', methods=['POST'])
-def setup_alert():
-    data = request.json
-    new_alert = Alert(
-        patient_id=data['patient_id'],
-        condition=data['condition'],
-        threshold=data['threshold'],
-        message=data['message']
-    )
-    session.add(new_alert)
-    session.commit()
-    return jsonify({"message": "Alert set up successfully"}), 200
-
-@app.route('/professional/<int:professional_id>/appointments', methods=['GET'])
-def list_appointments(professional_id):
-    appointments = session.query(Appointment).filter_by(professional_id=professional_id).all()
-    return jsonify([
-        {"patient_id": appointment.patient_id, "scheduled_time": appointment.scheduled_time.isoformat(), "description": appointment.description}
-        for appointment in appointments
-    ]), 200
-
-# Communication Module
+# Communication Module Routes
 @app.route('/messages/send', methods=['POST'])
 def send_message():
     data = request.json
@@ -132,6 +117,21 @@ def list_messages(user1_id, user2_id):
         {"sender_id": message.sender_id, "receiver_id": message.receiver_id, "content": message.content, "timestamp": message.timestamp.isoformat()}
         for message in messages
     ]), 200
+
+# Twilio Video Room Creation Route
+@app.route('/create_video_room', methods=['POST'])
+def create_video_room():
+    data = request.json
+    room_name = data.get('room_name')
+    client = Client(twilio_account_sid, twilio_auth_token)
+
+    room = client.video.rooms.create(
+        unique_name=room_name,
+        type='group',
+        record_participants_on_connect=False
+    )
+
+    return jsonify({"room_sid": room.sid}), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
