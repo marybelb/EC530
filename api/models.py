@@ -24,3 +24,25 @@ class Device(Base):
     id = Column(Integer, primary_key=True)
     type = Column(String(50), nullable=False)
     is_enabled = Column(Boolean, default=True)
+
+class MedicalRecord(Base):
+    __tablename__ = 'medical_records'
+    id = Column(Integer, primary_key=True)
+    patient_id = Column(Integer, ForeignKey('users.id'))
+    record = Column(Text)
+
+class Appointment(Base):
+    __tablename__ = 'appointments'
+    id = Column(Integer, primary_key=True)
+    patient_id = Column(Integer, ForeignKey('users.id'))
+    professional_id = Column(Integer, ForeignKey('users.id'))
+    scheduled_time = Column(DateTime)
+    description = Column(String(255))
+
+class Alert(Base):
+    __tablename__ = 'alerts'
+    id = Column(Integer, primary_key=True)
+    patient_id = Column(Integer, ForeignKey('users.id'))
+    condition = Column(String(255))
+    threshold = Column(Float)
+    message = Column(String(255))
