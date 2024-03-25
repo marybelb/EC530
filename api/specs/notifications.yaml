@@ -1,0 +1,30 @@
+openapi: 3.0.0
+info:
+  title: Notifications API
+  version: 1.0.0
+  description: API for managing notifications.
+paths:
+  /notifications:
+    get:
+      summary: Get all notifications
+      responses:
+        '200':
+          description: A list of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+components:
+  schemas:
+    Notification:
+      type: object
+      properties:
+        notificationId:
+          type: string
+        message:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
