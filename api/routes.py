@@ -1,51 +1,42 @@
 from flask import Flask, jsonify, request
-from models import User, Role, Device
+from models import Device, DeviceData
 from database import session
+import datetime
 
 app = Flask(__name__)
 
-# Route to register a new user
-@app.route('/users/register', methods=['POST'])
-def register_user():
+# Route to register a new device
+@app.route('/devices/register', methods=['POST'])
+def register_device():
     data = request.json
-    user = User(username=data['username'])
-    session.add(user)
+    new_device = Device(type=data['type'], is_enabled=True)
+    session.add(new_device)
     session.commit()
-    return jsonify({"message": "User registered successfully"}), 201
+    return jsonify({"message": "Device registered successfully", "device_id": new_device.id}), 201
 
-# Route to assign roles to users
-@app.route('/users/<int:user_id>/roles', methods=['POST'])
-def assign_role(user_id):
-    user = session.query(User).get(user_id)
-    if not user:
-        return jsonify({"message": "User not found"}), 404
-
+# Route for devices to send data
+@app.route('/devices/<int:device_id>/data', methods=['POST'])
+def receive_device_data(device_id):
+    device = session.query(Device).get(device_id)
+    if not device or not device.is_enabled:
+        return jsonify({"message": "Device not found or not enabled"}), 404
+    
     data = request.json
-    for role_name in data['roles']:
-        role = session.query(Role).filter_by(name=role_name).first()
-        if not role:
-            role = Role(name=role_name)
-            session.add(role)
-        user.roles.append(role)
+    device_data = DeviceData(device_id=device_id, data=data['data'], timestamp=datetime.datetime.now())
+    session.add(device_data)
     session.commit()
-    return jsonify({"message": "Roles assigned successfully"}), 200
+    return jsonify({"message": "Data received successfully"}), 200
 
-# Route to list all devices
-@app.route('/devices', methods=['GET'])
-def list_devices():
-    devices = session.query(Device).all()
-    return jsonify([{"id": device.id, "type": device.type, "is_enabled": device.is_enabled} for device in devices]), 200
-
-# Route to enable or disable a device
-@app.route('/devices/<int:device_id>/toggle', methods=['POST'])
-def toggle_device(device_id):
+# Administrator route to enable or disable a device integration
+@app.route('/admin/devices/<int:device_id>/toggle', methods=['POST'])
+def admin_toggle_device(device_id):
     device = session.query(Device).get(device_id)
     if not device:
         return jsonify({"message": "Device not found"}), 404
 
     device.is_enabled = not device.is_enabled
     session.commit()
-    return jsonify({"message": "Device toggled successfully"}), 200
+    return jsonify({"message": "Device integration toggled successfully", "status": device.is_enabled}), 200
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
