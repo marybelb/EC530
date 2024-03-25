@@ -1,0 +1,81 @@
+openapi: 3.0.0
+info:
+  title: Device Interface API
+  version: 1.0.0
+  description: API for device registration and data submission in a health monitoring system.
+servers:
+  - url: https://example.com/api/v1
+paths:
+  /devices:
+    post:
+      summary: Register a new medical device
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegistration'
+      responses:
+        '200':
+          description: Device successfully registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceRegistrationResponse'
+  /devices/{deviceId}/data:
+    post:
+      summary: Submit data from a medical device
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceData'
+      responses:
+        '200':
+          description: Data submission successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  submissionStatus:
+                    type: string
+                  message:
+                    type: string
+components:
+  schemas:
+    DeviceRegistration:
+      type: object
+      properties:
+        model:
+          type: string
+        manufacturer:
+          type: string
+        deviceType:
+          type: string
+    DeviceRegistrationResponse:
+      type: object
+      properties:
+        deviceId:
+          type: string
+        registrationStatus:
+          type: string
+        message:
+          type: string
+    DeviceData:
+      type: object
+      properties:
+        type:
+          type: string
+        value:
+          type: object
+        timestamp:
+          type: string
+          format: datetime
